@@ -24,9 +24,9 @@ describe "Html diff disregarding markup", ->
       expect(HtmlDiff.formatTextDiff original, final).toEqual expected
 
     it "detects correct insertions using entities", ->
-      original = "<h2>Dear Wendy,</h2><h2>Understand your sleep patterns </h2>You completed"
-      final = "<h2>Dear Wendy,</h2><h2>Understand &lt;p&gt; your &lt;html/&gt; sleep patterns </h2>You completed"
-      expected = "<h2>Dear Wendy,</h2><h2>Understand <ins>&lt;p&gt;</ins> your <ins>&lt;html/&gt;</ins> sleep patterns </h2>You completed"
+      original = "<h2>Dear Wendy,</h2><h2>Understand your knitting patterns </h2>You completed"
+      final = "<h2>Dear Wendy,</h2><h2>Understand &lt;p&gt; your &lt;html/&gt; knitting patterns </h2>You completed"
+      expected = "<h2>Dear Wendy,</h2><h2>Understand <ins>&lt;p&gt;</ins> your <ins>&lt;html/&gt;</ins> knitting patterns </h2>You completed"
 
       expect(HtmlDiff.formatTextDiff original, final).toEqual expected
 

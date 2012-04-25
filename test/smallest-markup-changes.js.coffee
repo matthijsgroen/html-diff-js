@@ -110,3 +110,85 @@ describe "Html diff disregarding markup", ->
       actual = HtmlDiff.makeSmallestMarkupChanges diff
       expect(actual).toEqual expected
 
+    describe "keeping tags together", ->
+
+      it "adds unchanged tagstarts to changes", ->
+        diff = [
+          [DIFF_EQUAL, "yeah nice<h"],
+          [DIFF_DELETE, "2>stuff"],
+          [DIFF_INSERT, "3> works"],
+          [DIFF_EQUAL, "like"],
+        ]
+
+        expected = [
+          [DIFF_EQUAL, "yeah"],
+          [DIFF_EQUAL, " "],
+          [DIFF_EQUAL, "nice"],
+          [DIFF_DELETE, "<h2>"],
+          [DIFF_DELETE, "stuff"],
+          [DIFF_INSERT, "<h3>"],
+          [DIFF_INSERT, " "],
+          [DIFF_INSERT, "works"],
+          [DIFF_EQUAL, "like"]
+        ]
+
+        actual = HtmlDiff.makeSmallestMarkupChanges diff
+        expect(actual).toEqual expected
+
+      it "adds unchanged tagends to changes", ->
+        diff = [
+          [DIFF_EQUAL, "like "],
+          [DIFF_DELETE, "weird<p"],
+          [DIFF_INSERT, "crazy</h"],
+          [DIFF_EQUAL, "ost>"]
+        ]
+
+        expected = [
+          [DIFF_EQUAL, "like"],
+          [DIFF_EQUAL, " "],
+          [DIFF_DELETE, "weird"],
+          [DIFF_DELETE, "<post>"],
+          [DIFF_INSERT, "crazy"],
+          [DIFF_INSERT, "</host>"]
+        ]
+
+        actual = HtmlDiff.makeSmallestMarkupChanges diff
+        expect(actual).toEqual expected
+
+      it "shifts cut up tags", ->
+        diff = [
+          [DIFF_EQUAL, "like <"],
+          [DIFF_INSERT, "p></"],
+          [DIFF_EQUAL, "p>"]
+        ]
+
+        expected = [
+          [DIFF_EQUAL, "like"],
+          [DIFF_EQUAL, " "],
+          [DIFF_EQUAL, "<p>"],
+          [DIFF_INSERT, "</p>"]
+        ]
+
+        actual = HtmlDiff.makeSmallestMarkupChanges diff
+        expect(actual).toEqual expected
+
+      it "combines tag pieces", ->
+        diff = [
+          [DIFF_EQUAL, "like <"],
+          [DIFF_INSERT, "/"],
+          [DIFF_EQUAL, "p><"]
+          [DIFF_DELETE, "/"]
+          [DIFF_EQUAL, "p>"]
+        ]
+
+        expected = [
+          [DIFF_EQUAL, "like"],
+          [DIFF_EQUAL, " "],
+          [DIFF_DELETE, "<p>"],
+          [DIFF_INSERT, "</p>"],
+          [DIFF_DELETE, "</p>"],
+          [DIFF_INSERT, "<p>"]
+        ]
+
+        actual = HtmlDiff.makeSmallestMarkupChanges diff
+        expect(actual).toEqual expected

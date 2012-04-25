@@ -21,11 +21,14 @@ window.HtmlDiff =
     finalDiff = @aggregateDiff finalDiff
     finalDiff = @filterRemovedSpaces finalDiff
     # format the diff to HTML tags
-    r = @formatDiff finalDiff
-    console.log r
-    r
+    @formatDiff finalDiff
 
   # private method
+  # This methods does 4 things:
+  # 1. Make sanitized plain text versions of the original and final text to compare
+  # 2. Makes a diff of the marked-up version of the original and final text
+  # 3. sanitizes the marked-up diff
+  # 4. plots the plain text changes in the final markup
   makeDiff: (originalText, finalText) ->
     originalText = @fixEntities originalText
     finalText = @fixEntities finalText
@@ -52,8 +55,8 @@ window.HtmlDiff =
     # 3. Make the diff with the 2 marked up texts
     diff = diff_match_patch.prototype.diff_main(originalText, finalText)
     diff_match_patch.prototype.diff_cleanupSemantic diff
-    diff = @makeSmallestMarkupChanges diff
     #@consoleDiff diff
+    diff = @makeSmallestMarkupChanges diff
 
     # store our final diff.
     # It's a list of changes, each entry is of the form [change, content]
@@ -174,6 +177,9 @@ window.HtmlDiff =
       diff.push [change, word]
 
   makeSmallestMarkupChanges: (markupDiff) ->
+    @consoleDiff markupDiff
+    @completeTags markupDiff
+    @consoleDiff markupDiff
     markupChanges = []
     for [change, content], index in markupDiff
       if change is DIFF_DELETE and markupDiff[index + 1]?[0] is DIFF_INSERT
@@ -238,6 +244,60 @@ window.HtmlDiff =
       sep = splittings.shift()
       collection.push(sep) if sep?
     collection
+
+  # private
+  # Complete broken tags in diff parts
+
+  tagStart: /<[\w\/]*$/
+  tagEnd: /^[\/\w]*>/
+  completeTags: (markupDiff) ->
+    for [change, content], index in markupDiff
+      if change is DIFF_EQUAL
+        if result = content.match @tagStart
+          markupDiff[index][1] = content.replace @tagStart, ''
+          @placeTagStart result[0], markupDiff, index + 1
+        if result = content.match @tagEnd
+          markupDiff[index][1] = content.replace @tagEnd, ''
+          @placeTagEnd result[0], markupDiff, index - 1
+
+  placeTagStart: (tagStart, diff, position) ->
+    while diff[position]? and diff[position]?[0] isnt DIFF_EQUAL
+      if tagEnd = diff[position][1].match @tagEnd
+        #console.log "#{tagStart}#{diff[position][1]}"
+        diff[position][1] = "#{tagStart}#{diff[position][1]}"
+        if res = diff[position][1].match @tagStart
+          # passing on problem, another equal may be missing this start
+          if res[0] isnt tagStart
+            if diff[position + 1]? and nextEnd = diff[position + 1][1].match @tagEnd
+              #console.log tagEnd[0], nextEnd[0]
+              if tagEnd[0] is nextEnd[0]
+                #console.log "shift left problem #{tagEnd[0]}"
+                newTag = "#{tagStart}#{tagEnd[0]}"
+                diff[position - 1][1] = "#{diff[position - 1][1]}#{newTag}"
+                diff[position][1] = diff[position][1].substr(newTag.length)
+
+      else
+        #console.log "duplication problem"
+        if diff[position + 1]? and nextEnd = diff[position + 1][1].match @tagEnd
+          change = diff[position]
+          change[1] = "#{tagStart}#{diff[position][1]}#{nextEnd[0]}"
+          negate = [diff[position][0] * -1, "#{tagStart}#{nextEnd[0]}"]
+          #@consoleDiff [change, negate]
+
+          diff.splice(position, 0, if negate[0] is DIFF_DELETE then negate else change)
+          position++
+          diff[position] = if change[0] is DIFF_DELETE then negate else change
+          diff[position + 1][1] = diff[position + 1][1].replace @tagEnd, ''
+          passOnProblem = no
+
+      position++
+
+  placeTagEnd: (tagEnd, diff, position) ->
+    #console.log "placeTagEnd", tagEnd
+    while diff[position]? and diff[position]?[0] isnt DIFF_EQUAL
+      if diff[position][1].match @tagStart
+        diff[position][1] = "#{diff[position][1]}#{tagEnd}"
+      position--
 
   # private method
   # grab all plain text from a piece of HTML, separate all words
