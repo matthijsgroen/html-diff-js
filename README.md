@@ -7,7 +7,10 @@ Dependencies
 ============
 
 jQuery: converting text into plain text including HTML Entities
+
 Diff Match Path: http://code.google.com/p/google-diff-match-patch/
+
+Underscore.js: Utility functions
 
 Usage
 =====
