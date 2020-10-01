@@ -15,7 +15,7 @@ Underscore.js: Utility functions
 Usage
 =====
 
-to produce a html diff marking insertions and deletions using the
+To produce a html diff marking insertions and deletions using the
 `<ins>` and `<del>` tags:
 
     HtmlDiff.formatTextDiff(originalText, finalText)
